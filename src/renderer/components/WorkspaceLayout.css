@@ -1,0 +1,66 @@
+/* src/renderer/components/WorkspaceLayout.css */
+
+.workspace-layout {
+  display: flex;
+  flex: 1;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ── Panel Base ────────────────────────────────────────────────── */
+.panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.panel-left {
+  width: var(--sidebar-width);
+  flex-shrink: 0;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border-dim);
+}
+
+.panel-main {
+  flex: 1;
+  background: var(--bg-base);
+  border-right: 1px solid var(--border-dim);
+  min-width: 0;
+}
+
+.panel-right {
+  width: var(--right-panel-width);
+  flex-shrink: 0;
+  background: var(--bg-surface);
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  height: 36px;
+  border-bottom: 1px solid var(--border-dim);
+  flex-shrink: 0;
+}
+
+.panel-header-icon {
+  color: var(--accent-cyan);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.panel-header-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--text-tertiary);
+}
+
+.panel-body {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}

@@ -1,0 +1,125 @@
+/* src/renderer/components/FileExplorer.css */
+
+.file-explorer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.explorer-root-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-dim);
+  flex-shrink: 0;
+}
+
+.root-icon {
+  color: var(--accent-cyan);
+  font-size: 12px;
+}
+
+.root-name {
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.explorer-tree {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 4px 0;
+}
+
+/* ── Tree Nodes ────────────────────────────────────────────────── */
+.tree-node {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  cursor: pointer;
+  padding-right: 8px;
+  transition: background var(--transition-fast);
+  position: relative;
+  min-width: 0;
+}
+
+.tree-node:hover {
+  background: var(--bg-hover);
+}
+
+.tree-folder.selected {
+  background: var(--accent-cyan-dim);
+}
+
+.tree-folder.selected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--accent-cyan);
+}
+
+/* ── Folder Node ───────────────────────────────────────────────── */
+.tree-toggle {
+  font-size: 9px;
+  color: var(--text-muted);
+  width: 10px;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.tree-folder-icon {
+  font-size: 8px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.tree-name {
+  font-size: 12px;
+  color: var(--text-secondary);
+  flex: 1;
+  min-width: 0;
+}
+
+.tree-folder .tree-name {
+  color: var(--text-primary);
+  font-weight: 400;
+}
+
+.tree-folder.selected .tree-name {
+  color: var(--accent-cyan);
+}
+
+.tree-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  background: var(--bg-active);
+  padding: 1px 5px;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
+
+/* ── File Node ─────────────────────────────────────────────────── */
+.tree-file {
+  cursor: default;
+}
+
+.tree-file-icon {
+  font-size: 8px;
+  flex-shrink: 0;
+}
+
+.tree-ext {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}

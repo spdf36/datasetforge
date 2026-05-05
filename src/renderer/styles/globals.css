@@ -1,0 +1,111 @@
+/* src/renderer/styles/globals.css */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+:root {
+  --bg-void:     #080a0d;
+  --bg-base:     #0d0f12;
+  --bg-surface:  #131720;
+  --bg-raised:   #1a1f2e;
+  --bg-hover:    #1f2535;
+  --bg-active:   #242b3d;
+
+  --border-dim:    rgba(255,255,255,0.05);
+  --border-subtle: rgba(255,255,255,0.09);
+  --border-normal: rgba(255,255,255,0.14);
+
+  --text-primary:   #e8eaf0;
+  --text-secondary: #8b93a8;
+  --text-tertiary:  #535b6e;
+  --text-muted:     #363c4d;
+
+  --accent-cyan:    #00d4ff;
+  --accent-cyan-dim: rgba(0,212,255,0.12);
+  --accent-green:   #00e5a0;
+  --accent-green-dim: rgba(0,229,160,0.12);
+  --accent-amber:   #ffb020;
+  --accent-amber-dim: rgba(255,176,32,0.12);
+  --accent-red:     #ff4d4d;
+  --accent-red-dim: rgba(255,77,77,0.12);
+  --accent-purple:  #b794f4;
+  --accent-purple-dim: rgba(183,148,244,0.12);
+
+  --font-mono: 'IBM Plex Mono', 'Cascadia Code', 'Fira Code', monospace;
+  --font-sans: 'IBM Plex Sans', -apple-system, sans-serif;
+
+  --radius-sm: 3px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+
+  --sidebar-width: 260px;
+  --right-panel-width: 300px;
+  --titlebar-height: 40px;
+
+  --transition-fast: 120ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-med:  200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-void);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-normal); }
+
+button {
+  font-family: var(--font-sans);
+  cursor: pointer;
+  border: none;
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+input, select, textarea {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--bg-void);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  padding: 7px 10px;
+  width: 100%;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 2px var(--accent-cyan-dim);
+}
+
+select option { background: var(--bg-raised); }
+
+.mono { font-family: var(--font-mono); }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Scanline overlay for aesthetic */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.03) 2px,
+    rgba(0,0,0,0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}

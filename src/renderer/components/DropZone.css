@@ -1,0 +1,270 @@
+/* src/renderer/components/DropZone.css */
+
+.dropzone-root {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-void);
+  gap: 0;
+}
+
+.dropzone-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.grid-svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Radial glow */
+.dropzone-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(0,212,255,0.04) 0%, transparent 70%);
+}
+
+/* ── Container ─────────────────────────────────────────────────── */
+.dropzone-container {
+  position: relative;
+  z-index: 1;
+  width: 520px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 52px 48px;
+  transition: all var(--transition-med);
+  box-shadow: 0 0 0 0 transparent, 0 24px 80px rgba(0,0,0,0.5);
+}
+
+.dropzone-container::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: calc(var(--radius-lg) + 1px);
+  background: linear-gradient(135deg, rgba(0,212,255,0.1), transparent 50%, rgba(0,229,160,0.05));
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--transition-med);
+}
+
+.dropzone-container.dragging {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 1px var(--accent-cyan), 0 0 40px rgba(0,212,255,0.15), 0 24px 80px rgba(0,0,0,0.5);
+  background: var(--bg-raised);
+}
+
+.dropzone-container.dragging::before { opacity: 1; }
+
+.dropzone-container.scanning {
+  border-color: var(--accent-green);
+  box-shadow: 0 0 20px rgba(0,229,160,0.1);
+}
+
+.dropzone-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+
+/* ── Icon ──────────────────────────────────────────────────────── */
+.dz-icon-wrap {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.dz-icon {
+  color: var(--text-tertiary);
+  transition: color var(--transition-med);
+  position: relative;
+  z-index: 2;
+}
+
+.dz-icon.active { color: var(--accent-cyan); }
+
+.dz-ring {
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 1px solid var(--border-dim);
+  animation: ringPulse 3s ease-in-out infinite;
+}
+
+.dz-ring-2 {
+  inset: -18px;
+  animation-delay: 1.5s;
+  opacity: 0.5;
+}
+
+@keyframes ringPulse {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.02); }
+}
+
+/* ── Text ──────────────────────────────────────────────────────── */
+.dz-title {
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  margin-top: 4px;
+}
+
+.dz-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.dz-divider {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.dz-divider::before, .dz-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-dim);
+}
+
+/* ── Browse Button ─────────────────────────────────────────────── */
+.dz-browse-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  border: 1px solid var(--border-normal);
+  padding: 10px 24px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+}
+
+.dz-browse-btn:hover {
+  background: var(--accent-cyan-dim);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  box-shadow: 0 0 16px rgba(0,212,255,0.1);
+}
+
+/* ── Error ─────────────────────────────────────────────────────── */
+.dz-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent-red);
+  font-size: 12px;
+  background: var(--accent-red-dim);
+  border: 1px solid rgba(255,77,77,0.2);
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  width: 100%;
+}
+
+/* ── Hints ─────────────────────────────────────────────────────── */
+.dz-hints {
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.dz-hint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+
+.hint-key {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-dim);
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: var(--text-secondary);
+}
+
+/* ── Scanning ──────────────────────────────────────────────────── */
+.scanning-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 20px 0;
+}
+
+.scan-spinner {
+  position: relative;
+  width: 48px;
+  height: 48px;
+}
+
+.scan-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: var(--accent-cyan);
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform-origin: 0 0;
+  transform: rotate(calc(var(--i) * 45deg)) translate(20px, -3px);
+  opacity: calc(1 - var(--i) * 0.1);
+  animation: spinFade 1s linear infinite;
+  animation-delay: calc(var(--i) * -0.125s);
+}
+
+@keyframes spinFade {
+  0% { opacity: 1; }
+  100% { opacity: 0.1; }
+}
+
+.scan-label {
+  color: var(--accent-cyan);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  animation: blink 1.5s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ── Footer ────────────────────────────────────────────────────── */
+.dropzone-footer {
+  position: absolute;
+  bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 11px;
+  z-index: 1;
+}
