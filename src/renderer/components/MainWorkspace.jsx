@@ -6,10 +6,8 @@ import './MainWorkspace.css';
 export default function MainWorkspace({
   mode, allImages, rootPath, selectedBatchPath,
   validationResult, referenceImageSrc,
-  historicalDates, missingDateQueue, currentMissingIdx,
-  currentMissingImageSrc, manualDate, onManualDateChange,
-  onManualDateSubmit, onSkipManualDate,
-  onStartJsonCreation, onSaveDirectly,
+  historicalDates, missingDateQueue,
+  onUpdateDate, onStartJsonCreation, onSaveDirectly,
   onRenameFolder, isProcessing, outputPath, onRefresh,
 }) {
   return (
@@ -37,19 +35,10 @@ export default function MainWorkspace({
           referenceImageSrc={referenceImageSrc}
           historicalDates={historicalDates}
           missingDateQueue={missingDateQueue}
+          selectedBatchPath={selectedBatchPath}
           isProcessing={isProcessing}
+          onUpdateDate={onUpdateDate}
           onSaveDirectly={onSaveDirectly}
-        />
-      )}
-      {mode === WORKSPACE_MODE.MANUAL_DATE && (
-        <ManualDateView
-          currentMissingImageSrc={currentMissingImageSrc}
-          currentMissingIdx={currentMissingIdx}
-          missingDateQueue={missingDateQueue}
-          manualDate={manualDate}
-          onManualDateChange={onManualDateChange}
-          onManualDateSubmit={onManualDateSubmit}
-          onSkipManualDate={onSkipManualDate}
         />
       )}
       {mode === WORKSPACE_MODE.COMPLETE && (
@@ -313,15 +302,90 @@ function PoseVariantRow({ found, batchPath, onRename }) {
   );
 }
 
-// ── JSON Creation View ───────────────────────────────────────────
-function JsonCreationView({ referenceImageSrc, historicalDates, missingDateQueue, isProcessing, onSaveDirectly }) {
-  const totalDates = Object.keys(historicalDates).length;
+// ── JSON Creation View — Interactive Image Grid ──────────────────
+function JsonCreationView({
+  referenceImageSrc, historicalDates, missingDateQueue,
+  selectedBatchPath, isProcessing, onUpdateDate, onSaveDirectly,
+}) {
+  const [selectedImage, setSelectedImage] = useState(null); // { name, path, src }
+  const [allHistoricalImages, setAllHistoricalImages] = useState([]);
+  const [loadedSrcs, setLoadedSrcs] = useState({}); // name → base64
+  const [editingDate, setEditingDate] = useState('');
+  const [loadingImages, setLoadingImages] = useState(true);
+
+  // Load all historical image thumbnails once
+  React.useEffect(() => {
+    if (!selectedBatchPath) return;
+    let cancelled = false;
+    (async () => {
+      setLoadingImages(true);
+      const historicalPath = `${selectedBatchPath}/Historical`;
+      const images = await window.electron.getImagesInFolder(historicalPath);
+      if (cancelled) return;
+      setAllHistoricalImages(images);
+
+      // Load all thumbnails
+      const srcs = {};
+      for (const img of images) {
+        const b64 = await window.electron.readImageAsBase64(img.path);
+        if (cancelled) return;
+        srcs[img.name] = b64;
+        setLoadedSrcs(prev => ({ ...prev, [img.name]: b64 }));
+      }
+      setLoadingImages(false);
+    })();
+    return () => { cancelled = true; };
+  }, [selectedBatchPath]);
+
+  const handleSelectImage = (img) => {
+    setSelectedImage(img);
+    // Pre-fill date input if already has a date
+    const existing = historicalDates[img.name];
+    if (existing) {
+      // strip T00:00:00 to get YYYY-MM-DD
+      setEditingDate(existing.slice(0, 10));
+    } else {
+      setEditingDate('');
+    }
+  };
+
+  const handleConfirmDate = () => {
+    if (!editingDate || !selectedImage) return;
+    onUpdateDate(selectedImage.name, editingDate);
+    // Advance to next missing image automatically
+    const missingNames = missingDateQueue.map(m => m.name).filter(n => n !== selectedImage.name);
+    const nextMissing = allHistoricalImages.find(img => missingNames.includes(img.name));
+    if (nextMissing) {
+      setSelectedImage(nextMissing);
+      setEditingDate('');
+    } else {
+      setSelectedImage(null);
+      setEditingDate('');
+    }
+  };
+
+  const missingCount = missingDateQueue.length;
+  const totalCount = allHistoricalImages.length;
+  const resolvedCount = totalCount - missingCount;
+  const allResolved = missingCount === 0 && totalCount > 0;
 
   return (
     <div className="ws-view">
       <div className="ws-toolbar">
-        <span className="ws-title">JSON Creation</span>
-        <span className="status-pill status-active">In Progress</span>
+        <div className="ws-toolbar-left">
+          <span className="ws-title">Historical Images — Capture Dates</span>
+          <span className="ws-badge">{resolvedCount}/{totalCount} dated</span>
+          {missingCount > 0 && (
+            <span className="ws-badge badge-warn">{missingCount} missing</span>
+          )}
+        </div>
+        <div className="ws-toolbar-right">
+          {allResolved && (
+            <button className="btn btn-primary" onClick={onSaveDirectly}>
+              ⊕ Save metadata.json
+            </button>
+          )}
+        </div>
       </div>
 
       {isProcessing ? (
@@ -330,125 +394,124 @@ function JsonCreationView({ referenceImageSrc, historicalDates, missingDateQueue
           <p className="mono">Extracting EXIF metadata via ExifTool...</p>
         </div>
       ) : (
-        <div className="json-creation-layout">
-          <div className="ref-image-section">
-            <div className="section-label mono">
-              <span className="accent-dot" />PRESENT_NEUTRAL — Reference Image
-            </div>
-            {referenceImageSrc ? (
-              <div className="ref-image-wrap">
-                <img src={referenceImageSrc} alt="Reference" className="ref-image" />
-              </div>
-            ) : (
-              <div className="ref-image-placeholder">No image found in Present_Neutral</div>
-            )}
-            <p className="ref-hint">Use this image to identify participant details and fill in the metadata fields →</p>
-          </div>
+        <div className="grid-layout">
 
-          <div className="dates-section">
-            <div className="section-label mono">
-              <span className="accent-dot accent-green" />HISTORICAL — Extracted Dates
-              <span className="ws-badge">{totalDates} extracted</span>
-              {missingDateQueue.length > 0 && (
-                <span className="ws-badge badge-warn">{missingDateQueue.length} need manual input</span>
+          {/* Left: image grid */}
+          <div className="hist-grid-wrap">
+            {/* Reference image strip */}
+            {referenceImageSrc && (
+              <div className="ref-strip">
+                <span className="ref-strip-label mono">PRESENT_NEUTRAL reference</span>
+                <img src={referenceImageSrc} alt="Reference" className="ref-strip-img" />
+              </div>
+            )}
+
+            <div className="hist-grid">
+              {loadingImages && allHistoricalImages.length === 0 && (
+                <div className="grid-loading mono">Loading images...</div>
               )}
-            </div>
-
-            {totalDates > 0 && (
-              <div className="dates-list">
-                {Object.entries(historicalDates).map(([fname, date]) => (
-                  <div key={fname} className="date-row">
-                    <span className="date-file mono truncate">{fname}</span>
-                    <span className="date-value mono">{date}</span>
-                    <span className="date-source">exif</span>
+              {allHistoricalImages.map(img => {
+                const hasMeta = !!historicalDates[img.name];
+                const isMissing = missingDateQueue.some(m => m.name === img.name);
+                const isSelected = selectedImage?.name === img.name;
+                return (
+                  <div
+                    key={img.name}
+                    className={`grid-cell ${isSelected ? 'grid-cell-selected' : ''} ${isMissing ? 'grid-cell-missing' : 'grid-cell-ok'}`}
+                    onClick={() => handleSelectImage(img)}
+                    title={img.name}
+                  >
+                    {loadedSrcs[img.name] ? (
+                      <img src={loadedSrcs[img.name]} alt={img.name} className="grid-thumb" />
+                    ) : (
+                      <div className="grid-thumb-placeholder">…</div>
+                    )}
+                    <div className="grid-cell-footer">
+                      <span className="grid-cell-name truncate">{img.name}</span>
+                      <span className={`grid-cell-badge ${hasMeta ? 'badge-ok' : 'badge-missing'}`}>
+                        {hasMeta ? '✓' : '?'}
+                      </span>
+                    </div>
+                    {hasMeta && (
+                      <div className="grid-cell-date mono">
+                        {historicalDates[img.name].slice(0, 10)}
+                      </div>
+                    )}
                   </div>
-                ))}
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Right: date editor for selected image */}
+          <div className="date-editor-panel">
+            {selectedImage ? (
+              <>
+                <div className="date-editor-header">
+                  <span className="section-label mono">
+                    <span className="accent-dot" /> SELECTED IMAGE
+                  </span>
+                  <span className="date-editor-filename mono truncate">{selectedImage.name}</span>
+                </div>
+
+                <div className="date-editor-preview">
+                  {loadedSrcs[selectedImage.name] ? (
+                    <img src={loadedSrcs[selectedImage.name]} alt={selectedImage.name} className="date-editor-img" />
+                  ) : (
+                    <div className="date-editor-img-placeholder">Loading...</div>
+                  )}
+                </div>
+
+                <div className="date-editor-status">
+                  {historicalDates[selectedImage.name] ? (
+                    <div className="date-found">
+                      <span className="status-ok-dot">✓</span>
+                      <div>
+                        <div className="date-found-label">EXIF date found</div>
+                        <div className="date-found-value mono">{historicalDates[selectedImage.name]}</div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="date-missing-tag">
+                      <span>⚠</span> No EXIF date — enter manually
+                    </div>
+                  )}
+                </div>
+
+                <div className="date-editor-input-wrap">
+                  <label className="field-label mono">Capture date</label>
+                  <input
+                    type="date"
+                    value={editingDate}
+                    onChange={e => setEditingDate(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleConfirmDate()}
+                    autoFocus
+                  />
+                  <button
+                    className="btn btn-primary"
+                    style={{ marginTop: 10, width: '100%' }}
+                    onClick={handleConfirmDate}
+                    disabled={!editingDate}
+                  >
+                    ✓ {historicalDates[selectedImage.name] ? 'Update Date' : 'Set Date'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="date-editor-empty">
+                <span className="empty-icon">◈</span>
+                <p>Click any image to view or edit its capture date.</p>
+                {missingCount > 0 && (
+                  <p className="hint-sub">
+                    <span style={{ color: 'var(--accent-amber)' }}>⚠ {missingCount}</span> image{missingCount !== 1 ? 's' : ''} still need a date.
+                  </p>
+                )}
               </div>
             )}
-
-            {missingDateQueue.length === 0 && totalDates > 0 && (
-              <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={onSaveDirectly}>
-                ⊕ Save metadata.json
-              </button>
-            )}
           </div>
+
         </div>
       )}
-    </div>
-  );
-}
-
-// ── Manual Date View ─────────────────────────────────────────────
-function ManualDateView({
-  currentMissingImageSrc, currentMissingIdx, missingDateQueue,
-  manualDate, onManualDateChange, onManualDateSubmit, onSkipManualDate,
-}) {
-  const current = missingDateQueue[currentMissingIdx];
-  const progress = currentMissingIdx + 1;
-  const total = missingDateQueue.length;
-
-  const handleKey = (e) => {
-    if (e.key === 'Enter') onManualDateSubmit();
-  };
-
-  return (
-    <div className="ws-view">
-      <div className="ws-toolbar">
-        <span className="ws-title">Manual Date Entry</span>
-        <span className="status-pill status-warn">
-          {progress} / {total} images
-        </span>
-      </div>
-
-      <div className="manual-date-layout">
-        <div className="manual-header">
-          <span className="warn-icon">⚠</span>
-          <div>
-            <h3>No EXIF date found for this image</h3>
-            <p className="mono" style={{ color: 'var(--text-tertiary)', fontSize: 11 }}>{current?.name}</p>
-          </div>
-        </div>
-
-        <div className="manual-progress-bar">
-          <div className="manual-progress-fill" style={{ width: `${(progress / total) * 100}%` }} />
-        </div>
-
-        <div className="manual-content">
-          <div className="manual-image-wrap">
-            {currentMissingImageSrc ? (
-              <img src={currentMissingImageSrc} alt="Missing date" className="manual-image" />
-            ) : (
-              <div className="manual-image-placeholder">Loading image...</div>
-            )}
-          </div>
-
-          <div className="manual-input-section">
-            <label className="field-label mono">Approximate capture date</label>
-            <input
-              type="date"
-              value={manualDate}
-              onChange={e => onManualDateChange(e.target.value)}
-              onKeyDown={handleKey}
-              placeholder="YYYY-MM-DD"
-              autoFocus
-            />
-            <p className="input-hint">Enter the approximate date this photo was taken.</p>
-
-            <div className="manual-actions">
-              <button
-                className="btn btn-primary"
-                onClick={onManualDateSubmit}
-                disabled={!manualDate}
-              >
-                ✓ Confirm Date
-              </button>
-              <button className="btn btn-ghost" onClick={onSkipManualDate}>
-                Skip →
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

@@ -67,54 +67,25 @@ export default function WorkspaceLayout({ rootPath, fileTree, allImages, onRefre
         setReferenceImageSrc(b64);
       }
 
-      // Extract dates from Historical
+      // Extract dates from Historical — populate grid
       const historicalPath = `${selectedBatchPath}/Historical`;
       const { dates, missingQueue } = await window.electron.extractHistoricalDates(historicalPath);
       setHistoricalDates(dates);
       setMissingDateQueue(missingQueue);
       setCurrentMissingIdx(0);
-
-      if (missingQueue.length > 0) {
-        setMode(WORKSPACE_MODE.MANUAL_DATE);
-        const firstImg = await window.electron.readImageAsBase64(missingQueue[0].path);
-        setCurrentMissingImageSrc(firstImg);
-      }
+      // No longer auto-switching to MANUAL_DATE — user edits inline in grid
     } finally {
       setIsProcessing(false);
     }
   }, [selectedBatchPath, validationResult]);
 
-  // ── Manual Date Entry ────────────────────────────────────────
-  const handleManualDateSubmit = useCallback(async () => {
-    if (!manualDate) return;
-    const currentItem = missingDateQueue[currentMissingIdx];
-    const updatedDates = { ...historicalDates, [currentItem.name]: `${manualDate}T00:00:00` };
-    setHistoricalDates(updatedDates);
-    setManualDate('');
+  // ── Inline date update from grid ─────────────────────────────
+  const handleUpdateDate = useCallback((filename, dateValue) => {
+    setHistoricalDates(prev => ({ ...prev, [filename]: `${dateValue}T00:00:00` }));
+    setMissingDateQueue(prev => prev.filter(item => item.name !== filename));
+  }, []);
 
-    const nextIdx = currentMissingIdx + 1;
-    if (nextIdx < missingDateQueue.length) {
-      setCurrentMissingIdx(nextIdx);
-      const b64 = await window.electron.readImageAsBase64(missingDateQueue[nextIdx].path);
-      setCurrentMissingImageSrc(b64);
-    } else {
-      // All done, save JSON
-      await saveMetadata(updatedDates);
-    }
-  }, [manualDate, missingDateQueue, currentMissingIdx, historicalDates]);
-
-  const handleSkipManualDate = useCallback(async () => {
-    const nextIdx = currentMissingIdx + 1;
-    if (nextIdx < missingDateQueue.length) {
-      setCurrentMissingIdx(nextIdx);
-      const b64 = await window.electron.readImageAsBase64(missingDateQueue[nextIdx].path);
-      setCurrentMissingImageSrc(b64);
-    } else {
-      await saveMetadata(historicalDates);
-    }
-  }, [currentMissingIdx, missingDateQueue, historicalDates]);
-
-  // ── If no missing dates, save directly ──────────────────────
+  // ── Save ─────────────────────────────────────────────────────
   const handleSaveDirectly = useCallback(async () => {
     await saveMetadata(historicalDates);
   }, [historicalDates, metadata]);
@@ -124,8 +95,10 @@ export default function WorkspaceLayout({ rootPath, fileTree, allImages, onRefre
       ...metadata,
       historic_capture_dates: dates,
     };
+    const folderName = selectedBatchPath.split(/[\\/]/).filter(Boolean).pop();
     const result = await window.electron.saveMetadata({
       batchFolderPath: selectedBatchPath,
+      filename: `${folderName}.json`,
       metadata: finalMetadata,
     });
     if (result.success) {
@@ -171,12 +144,7 @@ export default function WorkspaceLayout({ rootPath, fileTree, allImages, onRefre
           referenceImageSrc={referenceImageSrc}
           historicalDates={historicalDates}
           missingDateQueue={missingDateQueue}
-          currentMissingIdx={currentMissingIdx}
-          currentMissingImageSrc={currentMissingImageSrc}
-          manualDate={manualDate}
-          onManualDateChange={setManualDate}
-          onManualDateSubmit={handleManualDateSubmit}
-          onSkipManualDate={handleSkipManualDate}
+          onUpdateDate={handleUpdateDate}
           onStartJsonCreation={handleStartJsonCreation}
           onSaveDirectly={handleSaveDirectly}
           onRenameFolder={handleRenameFolder}

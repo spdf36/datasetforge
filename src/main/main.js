@@ -247,9 +247,9 @@ ipcMain.handle('fs:readImageAsBase64', async (_, filePath) => {
   }
 });
 
-// Save final metadata.json
-ipcMain.handle('fs:saveMetadata', async (_, { batchFolderPath, metadata }) => {
-  const outputPath = path.join(batchFolderPath, 'metadata.json');
+// Save final metadata JSON
+ipcMain.handle('fs:saveMetadata', async (_, { batchFolderPath, filename, metadata }) => {
+  const outputPath = path.join(batchFolderPath, filename || 'metadata.json');
   try {
     fs.writeFileSync(outputPath, JSON.stringify(metadata, null, 2), 'utf-8');
     return { success: true, outputPath };
