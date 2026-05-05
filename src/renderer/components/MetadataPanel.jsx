@@ -3,6 +3,8 @@ import React from 'react';
 import './MetadataPanel.css';
 
 const ETHNICITY_OPTIONS = [
+  'south_asian',
+  'north_african',
   'Asian – East Asian',
   'Asian – South Asian',
   'Asian – Southeast Asian',

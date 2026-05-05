@@ -123,9 +123,6 @@ export default function WorkspaceLayout({ rootPath, fileTree, allImages, onRefre
     const finalMetadata = {
       ...metadata,
       historic_capture_dates: dates,
-      generated_at: new Date().toISOString(),
-      batch_folder: selectedBatchPath,
-      pose_variant: poseVariantFound,
     };
     const result = await window.electron.saveMetadata({
       batchFolderPath: selectedBatchPath,
